@@ -1,2 +1,4 @@
-# TestJob
-TestJob
+- API: http://localhost:8090, Swagger: http://localhost:8090/api/swagger
+- pgAdmin: http://localhost:8080/?key=testjob-desktop-key 
+- PostgreSQL 18, данные в volume `pgdata`
+- Контейнер `app` монтирует `./Api` и при каждом старте делает `restore + build + run`
