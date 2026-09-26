@@ -1,3 +1,4 @@
+#!/bin/sh
 # Каждый запуск restore + build + run в этом же контейнере.
 set -e
 dotnet restore

@@ -99,7 +99,19 @@ public sealed partial class ProcessingService : IProcessingService
                     $"Ошибка выборки по селектору: {ex.Message}", ex);
             }
 
-            // Запись в postgres через Dapper
+            // Email регулярным выражением (синхронно, CPU-bound)
+            MatchCollection matches = EmailRegex().Matches(pageHtml);
+            var emails = new List<string>(matches.Count);
+            foreach (Match m in matches)
+            {
+                emails.Add(m.Value);
+            }
+
+            // AES-256 расшифровка (синхронно, CPU-bound).
+            // Выполняется ДО записи в БД, чтобы при DECRYPT_ERROR не оставались строки от неуспешного запроса.
+            string plainText = DecryptAesEcbNoPadding(cipher, key);
+
+            // Запись в postgres через Dapper (после всех CPU-bound шагов)
             try
             {
                 await using var conn = new NpgsqlConnection(_connectionString);
@@ -123,17 +135,6 @@ public sealed partial class ProcessingService : IProcessingService
                 throw new ProcessingException(ErrorCodes.DbError,
                     $"Ошибка записи в БД: {ex.Message}", ex);
             }
-
-            // Email регулярным выражением (синхронно, CPU-bound)
-            MatchCollection matches = EmailRegex().Matches(pageHtml);
-            var emails = new List<string>(matches.Count);
-            foreach (Match m in matches)
-            {
-                emails.Add(m.Value);
-            }
-
-            // AES-256 расшифровка (синхронно, CPU-bound)
-            string plainText = DecryptAesEcbNoPadding(cipher, key);
 
             return new ProcessResponse
             {
